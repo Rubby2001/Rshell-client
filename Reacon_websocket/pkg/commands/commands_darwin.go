@@ -97,7 +97,7 @@ func DoResumeThreads() ([]byte, error) {
 	return nil, errors.New("This function is not supported on this platform now.")
 }
 
-func ExecuteAssembly(sh []byte, params []string) ([]byte, error) {
+func ExecuteAssembly(sh []byte, params string) ([]byte, error) {
 	return nil, errors.New("This function is not supported on this platform now.")
 }
 
@@ -186,4 +186,7 @@ func Runu(b []byte) ([]byte, error) {
 
 func FullUnhook() error {
 	return errors.New("Unhooking is not supported on this platform now.")
+}
+func Inline_Bin(data []byte) ([]byte, error) {
+	return nil, errors.New("This function is not supported on this platform now.")
 }

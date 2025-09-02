@@ -4,11 +4,16 @@ go 1.20
 
 require (
 	github.com/shirou/gopsutil v3.21.11+incompatible //获取pid的包
-	golang.org/x/sys v0.27.0
-	golang.org/x/text v0.20.0
+	golang.org/x/sys v0.29.0
+	golang.org/x/text v0.21.0
 )
 
-require github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
+require (
+	github.com/Ne0nd0g/go-clr v1.0.3
+	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
+	github.com/google/uuid v1.6.0
+	golang.org/x/crypto v0.32.0
+)
 
 require (
 	github.com/go-ole/go-ole v1.2.6 // indirect

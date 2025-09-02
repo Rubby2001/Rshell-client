@@ -1,10 +1,12 @@
 package config
 
 import (
+	"strings"
 	"time"
 )
 
 var (
-	ExecuteKey = "tNROopcR45q4Z8I1"
+	pass       = "PASSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+	ExecuteKey = strings.ReplaceAll(pass, " ", "")
 	WaitTime   = 5000 * time.Millisecond
 )

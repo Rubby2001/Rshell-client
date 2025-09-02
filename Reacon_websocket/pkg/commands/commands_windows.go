@@ -3,12 +3,13 @@ package commands
 import (
 	"Reacon/pkg/communication"
 	"errors"
-	"golang.org/x/sys/windows"
 	"os"
 	"strconv"
 	"syscall"
 	"time"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var (

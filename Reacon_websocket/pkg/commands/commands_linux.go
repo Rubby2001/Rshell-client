@@ -86,3 +86,9 @@ func Shell(path string, args []byte) ([]byte, error) {
 func Execute(b []byte) ([]byte, error) {
 	return nil, errors.New("This function is not supported on this platform now.")
 }
+func ExecuteAssembly(data []byte, args string) ([]byte, error) {
+	return nil, errors.New("This function is not supported on this platform now.")
+}
+func Inline_Bin(data []byte) ([]byte, error) {
+	return nil, errors.New("This function is not supported on this platform now.")
+}

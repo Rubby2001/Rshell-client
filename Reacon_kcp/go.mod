@@ -10,7 +10,12 @@ require (
 	golang.org/x/text v0.20.0
 )
 
-require github.com/xtaci/kcp-go/v5 v5.6.18
+require (
+	github.com/Ne0nd0g/go-clr v1.0.3
+	github.com/google/uuid v1.6.0
+	github.com/xtaci/kcp-go/v5 v5.6.18
+	golang.org/x/crypto v0.21.0
+)
 
 require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -24,6 +29,5 @@ require (
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 )
