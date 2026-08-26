@@ -1,14 +1,17 @@
 package communication
 
 import (
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/utils"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/utils"
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/togettoyou/wsc"
 	"sync"
+
+	"github.com/togettoyou/wsc"
 )
+
+var WebsocketClient *wsc.Wsc
 
 func ErrorProcess(err error) {
 	errMsgBytes := []byte(err.Error())
@@ -46,14 +49,13 @@ func criticalSection(callbackType int, b []byte) {
 	normalDataBytes := utils.WriteInt(normalDataInt)
 	msgToSend := utils.BytesCombine(normalDataBytes, msg)
 
-	SendData(utils.WebsocketClient, msgToSend)
+	SendData(WebsocketClient, msgToSend)
 	mutex.Unlock()
 }
 func SendData(connection *wsc.Wsc, data []byte) {
 	connection.SendBinaryMessage(data)
 }
 
-// replyType(4) | result  并加密
 func MakePacket(replyType int, b []byte) []byte {
 	buf := new(bytes.Buffer)
 

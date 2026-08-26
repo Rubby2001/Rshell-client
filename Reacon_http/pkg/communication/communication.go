@@ -2,8 +2,8 @@ package communication
 
 import (
 	"Reacon/pkg/config"
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/utils"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/utils"
 	"bytes"
 	"encoding/binary"
 	"fmt"

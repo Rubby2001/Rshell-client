@@ -2,7 +2,7 @@ package communication
 
 import (
 	"Reacon/pkg/config"
-	"Reacon/pkg/encrypt"
+	"rshell-client/shared/encrypt"
 	"crypto/tls"
 	"fmt"
 	"net/http"
