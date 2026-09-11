@@ -1,72 +1,74 @@
-# Rshell-client - Golang 多协议 C2 客户端
+# Rshell-client - Multi-Protocol C2 Client in Golang
+
+English | **[简体中文](./README_zh-CN.md)**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 ![Language](https://img.shields.io/badge/Language-Go-blue)
 ![GitHub Stars](https://img.shields.io/github/stars/Rubby2001/Rshell-client?style=social)
 
-> ⚠️ **免责声明**：本项目仅供安全研究人员在**授权范围内**进行渗透测试、红蓝对抗与安全教育使用，禁止用于任何未授权用途。完整声明见 [Rshell 主仓库](https://github.com/Rubby2001/Rshell---A-Cross-Platform-C2#免责声明)。
+> ⚠️ **Disclaimer**: This project is intended solely for security research, **authorized** penetration testing, red/blue teaming and education. Do not use it for any unauthorized purpose. See the full disclaimer in the [main repository](https://github.com/Rubby2001/Rshell---A-Cross-Platform-C2#disclaimer).
 
-Rshell-client 是 [Rshell](https://github.com/Rubby2001/Rshell---A-Cross-Platform-C2) C2 框架的 **Golang 客户端**，支持多种协议上线，编译产物作为模板内嵌进服务端，由服务端生成客户端时替换占位符完成配置。
+Rshell-client is the **Golang client** of the [Rshell](https://github.com/Rubby2001/Rshell---A-Cross-Platform-C2) C2 framework. It supports multiple protocols; build outputs serve as templates embedded into the server, which patches the placeholders when generating a client.
 
-## Rshell 项目矩阵
+## Rshell Project Matrix
 
-| 项目 | 说明 |
+| Project | Description |
 |---|---|
-| [Rshell---A-Cross-Platform-C2](https://github.com/Rubby2001/Rshell---A-Cross-Platform-C2) | C2 服务端（Go） |
-| **Rshell-client** | Golang 客户端（本仓库） |
-| [Rshell-client-rust](https://github.com/Rubby2001/Rshell-client-rust) | Rust 客户端 |
-| [Rshell-web](https://github.com/Rubby2001/Rshell-web) | Web 前端 |
+| [Rshell---A-Cross-Platform-C2](https://github.com/Rubby2001/Rshell---A-Cross-Platform-C2) | C2 server (Go) |
+| **Rshell-client** | Golang client (this repo) |
+| [Rshell-client-rust](https://github.com/Rubby2001/Rshell-client-rust) | Rust client |
+| [Rshell-web](https://github.com/Rubby2001/Rshell-web) | Web frontend |
 
-## 核心特性
+## Core Features
 
-- **多协议上线**：TCP、WebSocket、KCP、HTTP、OSS 存储桶轮询，均与服务端双加密通道通讯
-- **代理转发上线**：`Forward` 支持 TCP / WebSocket 经代理（SOCKS5）转发上线，适配内网出网受限场景
-- **内存执行**：内置 BOF（COFF Loader）加载执行能力
-- **信息收集**：集成浏览器数据获取（hackbrowserdata）、系统信息、进程信息收集
-- **交互式终端**：远程交互式 Shell
-- **反沙箱**：支持配置执行密码，未携带正确参数时静默退出
-- **模板化配置**：上线地址、公钥、执行密码均为占位符，由服务端生成客户端时替换
+- **Multi-protocol callbacks**: TCP, WebSocket, KCP, HTTP and OSS bucket polling — all over the server's double-encrypted channel
+- **Proxied egress**: `Forward/` tunnels TCP / WebSocket connections through a SOCKS5 proxy for restricted networks
+- **In-memory execution**: built-in BOF (COFF loader) support
+- **Information gathering**: browser data extraction (hackbrowserdata), system and process information collection
+- **Interactive terminal**: remote interactive shell
+- **Anti-sandbox**: optional execution password — the binary silently exits without the correct argument
+- **Templated configuration**: server address, public key and execution password are placeholders replaced by the server at generation time
 
-## 目录结构
+## Repository Layout
 
-每个协议为独立 Go module，单独编译：
+Each protocol is a standalone Go module, built separately:
 
 ```
-├── Reacon_tcp/           # TCP 上线
-├── Reacon_websocket/     # WebSocket 上线
-├── Reacon_kcp/           # KCP 上线
-├── Reacon_http/          # HTTP(S) 上线
-├── Reacon_oss/           # 阿里云 OSS 存储桶上线
+├── Reacon_tcp/           # TCP transport
+├── Reacon_websocket/     # WebSocket transport
+├── Reacon_kcp/           # KCP transport
+├── Reacon_http/          # HTTP(S) transport
+├── Reacon_oss/           # Alibaba Cloud OSS transport
 ├── Forward/
-│   ├── tcp/              # TCP 经代理转发上线
-│   └── websocket/        # WebSocket 经代理转发上线
-└── shared/               # 共享库：加密、命令执行、终端、BOF、信息收集等
+│   ├── tcp/              # TCP through a proxy
+│   └── websocket/        # WebSocket through a proxy
+└── shared/               # shared library: crypto, command execution, terminal, BOF, info gathering
 ```
 
-## 编译
+## Building
 
-依赖 Go（`build.sh` 中默认使用 `go1.20` 工具链，可按需修改），全部 `CGO_ENABLED=0` 交叉编译：
+Requires Go (the `build.sh` scripts default to the `go1.20` toolchain; adjust as needed). All builds are `CGO_ENABLED=0` cross-compilations:
 
 ```bash
 cd Reacon_tcp
 bash build.sh
 ```
 
-产物输出到各协议目录的 `server/` 下，覆盖常见平台：
+Artifacts are output into each protocol's `server/` directory, covering common platforms:
 
 - `r_windows_amd64.exe` / `r_windows_386.exe`
 - `r_linux_amd64 / 386 / arm / arm64 / loong64 / mips / mipsle / mips64 / mips64le`
 - `r_darwin_amd64 / r_darwin_arm64`
 
-### 作为服务端模板使用
+### Using outputs as server templates
 
-将编译产物复制到 Rshell 服务端 `pkg/api/server/<协议>/` 目录（文件名保持 `r_<GOOS>_<ARCH>[.exe]`），重新编译服务端即可内嵌生效。服务端生成客户端时自动替换模板中的占位符：
+Copy the build outputs into the Rshell server's `pkg/api/server/<protocol>/` directory (keep the `r_<GOOS>_<ARCH>[.exe]` naming), then rebuild the server to embed them. Placeholders are replaced automatically when the server generates a client:
 
-| 占位符 | 位置 | 含义 |
+| Placeholder | Location | Meaning |
 |---|---|---|
-| `HOSTAAA...` | 各协议 `main.go` | 服务端地址 |
-| `ServerPublicKeyAAA...` | `shared/config/config.go` | 服务端公钥 |
-| `PASSAAA...` | `shared/config/config.go` | 反沙箱执行密码 |
+| `HOSTAAA...` | each protocol's `main.go` | Server address |
+| `ServerPublicKeyAAA...` | `shared/config/config.go` | Server public key |
+| `PASSAAA...` | `shared/config/config.go` | Anti-sandbox execution password |
 
 ## License
 
