@@ -86,7 +86,7 @@ func Send(c *Client, name string, content []byte) {
 	// var err error
 	err = c.Bucket.PutObject(name, f)
 	if err != nil {
-		log.Println("[-]", "上传失败")
+		log.Println("[-]", "upload failed")
 		return
 	}
 

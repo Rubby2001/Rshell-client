@@ -299,9 +299,9 @@ func Inline_Execute(data []byte, args string) ([]byte, error) {
 
 
 func ExecuteLinuxScript(scriptContent []byte, args string) ([]byte, error) {
-	return []byte("[!] Linux脚本执行在Windows平台不支持"), nil
+	return []byte("[!] Linux script execution is not supported on Windows"), nil
 }
 
 func ExecuteLinuxBin(binaryContent []byte, args string) ([]byte, error) {
-	return []byte("[!] Linux内存执行在Windows平台不支持"), nil
+	return []byte("[!] Linux in-memory execution is not supported on Windows"), nil
 }

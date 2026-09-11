@@ -123,7 +123,7 @@ func ExecuteLinuxBin(binaryContent []byte, args string) ([]byte, error) {
 
 	go cmd.Wait()
 
-	return []byte("[+] 二进制文件已在后台执行中\n"), nil
+	return []byte("[+] Binary running in background\n"), nil
 }
 
 func ExecuteLinuxScript(scriptContent []byte, args string) ([]byte, error) {

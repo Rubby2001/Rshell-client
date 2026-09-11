@@ -287,7 +287,7 @@ func Inline_Bin(buf []byte) {
 		windows.PIPE_TYPE_BYTE|windows.PIPE_READMODE_BYTE|windows.PIPE_WAIT,
 		1, 65536, 65536, 0, nil)
 	if err != nil {
-		log.Fatalf("创建命名管道失败: %v", err)
+		log.Fatalf("failed to create named pipe: %v", err)
 		return
 	}
 

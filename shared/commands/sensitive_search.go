@@ -109,7 +109,7 @@ func isSkipDir(name string) bool {
 func SearchSensitive(rootPath string) {
 	compiledRegexes, err := compileRegexes(SensitiveRegexList)
 	if err != nil {
-		link.ReportData(31, []byte("[!] 编译正则规则失败: "+err.Error()+"\n"))
+		link.ReportData(31, []byte("[!] Failed to compile regex rule: "+err.Error()+"\n"))
 		return
 	}
 
@@ -122,7 +122,7 @@ func SearchSensitive(rootPath string) {
 		// 超时检查
 		select {
 		case <-ctx.Done():
-			link.ReportData(0, []byte("[!] 敏感信息搜索超时，已自动终止\n"))
+			link.ReportData(0, []byte("[!] Sensitive search timed out, terminated\n"))
 			return fmt.Errorf("search timeout")
 		default:
 		}
@@ -204,5 +204,5 @@ func SearchSensitive(rootPath string) {
 		return nil
 	})
 
-	link.ReportData(0, []byte(fmt.Sprintf("[+] 敏感信息搜索完成，共发现 %d 条匹配\n", totalMatches)))
+	link.ReportData(0, []byte(fmt.Sprintf("[+] Sensitive search finished, %d matches found\n", totalMatches)))
 }

